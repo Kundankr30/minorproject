@@ -1,4 +1,5 @@
 # Intelligent File Deduplicator
+# This is a minor project which is a part of Silicon Summer Intership course(Backend with Rust)
 
 A Rust-based file deduplication tool that uses multiple hashing algorithms, parallel processing, and advanced filtering to efficiently identify and manage duplicate files.
 
@@ -30,50 +31,14 @@ The process begins by recursively walking through the target directory using `wa
 - **Extension**: Allowed file extensions (e.g., txt, rs, md)
 - **Name Pattern**: Regex patterns for file names
 
-```rust
-// Files are collected and filtered
-let files: Vec<_> = WalkDir::new(target_dir)
-    .into_iter()
-    .filter_map(|e| e.ok())
-    .filter(|e| file_filter(e, min_size, max_size, &allowed_exts, &name_regex))
-    .collect();
-```
-
 ### Step 2: Parallel Hashing
 Files are processed in parallel using Rayon for improved performance. Each file is hashed using the selected algorithm (default: Blake3) with a progress bar showing completion status.
-
-```rust
-// Parallel processing with progress tracking
-let results: Vec<_> = process_files_parallel(&files, |entry| {
-    let path = entry.path();
-    let size = entry.metadata().map(|m| m.len()).unwrap_or(0);
-    let hash = calculate_hash(path, HashAlgo::Blake3)
-        .map(|h| hex::encode(h))
-        .unwrap_or_else(|_| "ERROR".to_string());
-    FileEntry { path, size, hash }
-});
-```
 
 ### Step 3: Duplicate Detection
 Files are grouped by their hash values to identify duplicates. Files with identical hashes are considered duplicates.
 
-```rust
-// Group files by hash to find duplicates
-let mut groups: HashMap<String, Vec<&FileEntry>> = HashMap::new();
-for entry in &results {
-    groups.entry(entry.hash.clone()).or_default().push(entry);
-}
-let duplicates: Vec<_> = groups.values().filter(|g| g.len() > 1).collect();
-```
-
 ### Step 4: Report Generation
 A detailed JSON report is generated showing all duplicate file groups, including file paths, sizes, and hash values.
-
-```rust
-// Generate and display report
-let report = generate_json_report(&duplicates);
-println!("{}", report);
-```
 
 ### Step 5: User-Friendly Output
 The program provides clear, human-readable output indicating whether duplicates were found and listing the duplicate file groups.
@@ -95,17 +60,6 @@ The program provides clear, human-readable output indicating whether duplicates 
 - **Speed**: Extremely fast
 - **Collision Resistance**: Good for deduplication purposes
 
-## Configuration
-
-The program can be configured by modifying these parameters in `main.rs`:
-
-```rust
-let target_dir = ".";                    // Directory to scan
-let min_size = 1;                       // Minimum file size in bytes
-let max_size = u64::MAX;                // Maximum file size
-let allowed_exts = vec!["txt", "rs", "md"]; // Allowed file extensions
-let name_regex = Regex::new(r".*").unwrap(); // File name pattern
-```
 
 ## Usage
 
@@ -136,14 +90,6 @@ let name_regex = Regex::new(r".*").unwrap(); // File name pattern
 - `twox-hash`: xxHash implementation
 - `hex`: Hex encoding
 
-## Future Enhancements
-
-- [ ] CLI argument parsing for configuration
-- [ ] HTML report generation
-- [ ] Quarantine system implementation
-- [ ] File deletion with confirmation
-- [ ] Date-based filtering
-- [ ] Memory usage optimization for large directories
 
 ## Safety Features
 
